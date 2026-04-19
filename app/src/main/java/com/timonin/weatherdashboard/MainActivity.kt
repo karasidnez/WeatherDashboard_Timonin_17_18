@@ -117,6 +117,14 @@ fun WeatherDashboardScreen(
         ) {
             Text(text = if (weatherState.isLoading) "Loading..." else "🔃 Refresh Weather")
         }
+        if (weatherState.loadingProgress.isNotEmpty()){
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = weatherState.loadingProgress,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.secondary
+            )
+        }
         if (weatherState.error != null) {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
