@@ -17,6 +17,19 @@ class WeatherViewModel : ViewModel() {
     init {
         loadWeatherData()
     }
+    /**
+     * Демонстрация работы диспетчеров:
+     *
+     * viewModelScope.launch - запускается на Dispatchers.Main
+     * > coroutineScope { } └─
+     * > async { fetchTemperature() } - выполняется на Dispatchers.IO (внутри repository) └─
+     * > async { fetchHumidity() } - выполняется на Dispatchers.IO └─
+     * > async { fetchWindSpeed() } - выполняется на Dispatchers.IO └─
+     * > calculateWeatherIndex() - переключается на Dispatchers.Default └─
+     * > обновление _weatherState - происходит на Dispatchers.Main └─
+     *
+     * Результат: UI никогда не блокируется!
+     */
     fun loadWeatherData(){
         viewModelScope.launch {
             _weatherState.value = _weatherState.value.copy(
@@ -25,17 +38,29 @@ class WeatherViewModel : ViewModel() {
                 loadingProgress = "Запуск загрузки..."
             )
             try {
-                coroutineScope { // Создаём scope, который НЕ отменяет родителя при ошибке ←
+                coroutineScope {
+                    _weatherState.value = _weatherState.value.copy(
+                        loadingProgress = "Загружаем температуру, влажность, скорость ветра..."
+                    )
                     val tempDeferred = async { repository.fetchTemperature() }
                     val humDeferred = async { repository.fetchHumidity() }
                     val windDeferred = async { repository.fetchWindSpeed() }
                     val temperature = tempDeferred.await()
                     val humidity = humDeferred.await()
                     val windSpeed = windDeferred.await()
+                    _weatherState.value = _weatherState.value.copy(
+                        loadingProgress = "Вычисление индекса погоды..."
+                    )
+                    val weatherIndex = repository.calculateWeatherIndex(
+                        temperature,
+                        humidity,
+                        windSpeed
+                    )
                     _weatherState.value = WeatherData(
                         temperature = temperature,
                         humidity = humidity,
                         windSpeed = windSpeed,
+                        weatherIndex = weatherIndex,
                         isLoading = false,
                         error = null,
                         loadingProgress = "Загрузка завершена!"

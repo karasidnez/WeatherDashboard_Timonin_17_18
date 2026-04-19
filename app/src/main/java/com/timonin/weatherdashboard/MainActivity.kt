@@ -110,6 +110,14 @@ fun WeatherDashboardScreen(
             value = weatherState.humidity?.let {"$it m/s"} ?: "-",
             isLoading = weatherState.isLoading && weatherState.windSpeed == null
         )
+        if (weatherState.weatherIndex != null){
+            WeatherCard(
+                emoji = "📊",
+                title = "Wether Index",
+                value = "${weatherState.weatherIndex}",
+                isLoading = false
+            )
+        }
 
         Spacer(modifier = Modifier.height(32.dp))
         Button(
