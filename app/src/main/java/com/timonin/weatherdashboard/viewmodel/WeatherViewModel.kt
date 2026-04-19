@@ -9,6 +9,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.flow
 
 class WeatherViewModel : ViewModel() {
     private val repository = WeatherRepository()
@@ -30,6 +32,10 @@ class WeatherViewModel : ViewModel() {
      *
      * Результат: UI никогда не блокируется!
      */
+    init {
+        loadWeatherData()
+        startAutoRefresh()
+    }
     fun loadWeatherData(){
         viewModelScope.launch {
             _weatherState.value = _weatherState.value.copy(
@@ -78,5 +84,19 @@ class WeatherViewModel : ViewModel() {
     }
     fun toggleErrorSimulation(){
         repository.toggleErrorSimulation()
+    }
+    private fun startAutoRefresh(){
+        viewModelScope.launch {
+            flow{
+                while (true){
+                    delay(10000)
+                    emit(Unit)
+                }
+            }.collect {
+                loadWeatherData()
+            }
+
+        }
+
     }
 }
