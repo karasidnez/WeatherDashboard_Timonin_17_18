@@ -4,6 +4,7 @@ import androidx.lifecycle.viewModelScope
 import com.timonin.weatherdashboard.data.WeatherData
 import com.timonin.weatherdashboard.data.WeatherRepository
 import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -23,25 +24,23 @@ class WeatherViewModel : ViewModel() {
                 error = null,
                 loadingProgress = "Запуск загрузки..."
             )
-            try{
-                _weatherState.value = _weatherState.value.copy(
-                    loadingProgress = "загружаем температуру, влажность, скорость ветра..."
-                )
-                val temperatureDeferred = async { repository.fetchTemperature() }
-                val humidityDeferred = async { repository.fetchHumidity() }
-                val windSpeedDeferred = async { repository.fetchWindSpeed() }
-                val temperature =temperatureDeferred.await()
-                val humidity = humidityDeferred.await()
-                val windSpeed = windSpeedDeferred.await()
-
-                _weatherState.value = WeatherData(
-                    temperature = temperature,
-                    humidity = humidity,
-                    windSpeed = windSpeed,
-                    isLoading = false,
-                    error = null,
-                    loadingProgress = "Загрузка завершена!"
-                )
+            try {
+                coroutineScope { // Создаём scope, который НЕ отменяет родителя при ошибке ←
+                    val tempDeferred = async { repository.fetchTemperature() }
+                    val humDeferred = async { repository.fetchHumidity() }
+                    val windDeferred = async { repository.fetchWindSpeed() }
+                    val temperature = tempDeferred.await()
+                    val humidity = humDeferred.await()
+                    val windSpeed = windDeferred.await()
+                    _weatherState.value = WeatherData(
+                        temperature = temperature,
+                        humidity = humidity,
+                        windSpeed = windSpeed,
+                        isLoading = false,
+                        error = null,
+                        loadingProgress = "Загрузка завершена!"
+                    )
+                }
             } catch (e: Exception) {
                 _weatherState.value = _weatherState.value.copy(
                     isLoading = false,
@@ -51,5 +50,8 @@ class WeatherViewModel : ViewModel() {
             }
 
         }
+    }
+    fun toggleErrorSimulation(){
+        repository.toggleErrorSimulation()
     }
 }
